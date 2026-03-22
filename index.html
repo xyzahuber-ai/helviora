@@ -209,9 +209,9 @@ body::before{
 .content{padding:28px 28px 100px;flex:1}
 
 /* ═══ VIEWS ═══ */
-.view{display:none;animation:fadeSlide .3s ease}
+.view{display:none;animation:fadeIn .25s ease}
 .view.active{display:block}
-@keyframes fadeSlide{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
 /* ═══ CARDS ═══ */
 .card{
@@ -547,7 +547,7 @@ input[type=range]::-webkit-slider-thumb{
 
 /* Scan form */
 .scan-form{background:var(--gold-dim);border:1px solid rgba(240,180,41,0.2);border-radius:var(--r2);padding:22px;margin-bottom:18px;display:none}
-.scan-form.show{display:block;animation:fadeSlide .2s ease}
+.scan-form.show{display:block;animation:fadeIn .2s ease}
 
 /* Payment type */
 .ptype-chooser{display:flex;border-radius:12px;overflow:hidden;border:1px solid var(--border);margin-bottom:16px}
@@ -555,7 +555,7 @@ input[type=range]::-webkit-slider-thumb{
 .ptype-btn:first-child{border-right:1px solid var(--border)}
 .ptype-btn.on{background:var(--gold-dim);color:var(--gold)}
 .raten-section{background:var(--purple-dim);border:1px solid rgba(139,92,246,0.2);border-radius:12px;padding:16px;margin-top:6px;display:none}
-.raten-section.show{display:block;animation:fadeSlide .2s ease}
+.raten-section.show{display:block;animation:fadeIn .2s ease}
 
 /* Raten cards */
 .raten-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:20px 22px;margin-bottom:14px}
@@ -1087,10 +1087,12 @@ canvas{max-width:100%}
           <div class="slider-wrap"><label>Bruttoeinkommen <span id="incVal">120\'000 CHF</span></label><input type="range" min="20000" max="500000" step="5000" value="120000" id="incSlider" oninput="updS('inc');calcTax()"></div>
           <div class="slider-wrap"><label>Säule 3a Beitrag <span id="s3aVal">7\'056 CHF</span></label><input type="range" min="0" max="7056" step="100" value="7056" id="s3aSlider" oninput="updS('s3a');calcTax()"></div>
           <div class="slider-wrap"><label>Abzüge / Berufskosten <span id="dedVal">8\'000 CHF</span></label><input type="range" min="0" max="30000" step="500" value="8000" id="dedSlider" oninput="updS('ded');calcTax()"></div>
-          <div class="toggle-row">
-            <button class="toggle-btn on" id="cs" onclick="setCivil('single',this)">Ledig</button>
-            <button class="toggle-btn" id="cm" onclick="setCivil('married',this)">Verheiratet</button>
-          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px">
+        <button class="toggle-btn on" id="cs" onclick="setCivil('single',this)">Ledig</button>
+        <button class="toggle-btn" id="cm" onclick="setCivil('married',this)">Verheiratet</button>
+        <button class="toggle-btn" id="ct" onclick="setCivil('separated',this)">Verheiratet, getrennt</button>
+        <button class="toggle-btn" id="cp" onclick="setCivil('partner',this)">Eingetragene Partnerschaft</button>
+      </div>
         </div>
         <div class="card">
           <div class="card-title mb16">Steueraufschlüsselung</div>
@@ -1341,11 +1343,7 @@ function updS(t){
   if(t==='s3a'){const v=+document.getElementById('s3aSlider').value;document.getElementById('s3aVal').textContent=v.toLocaleString('de-CH')+' CHF';}
   if(t==='ded'){const v=+document.getElementById('dedSlider').value;document.getElementById('dedVal').textContent=v.toLocaleString('de-CH')+' CHF';}
 }
-function setCivil(s,el){
-  civil=s;
-  document.querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('on'));
-  el.classList.add('on');calcTax();
-}
+function setCivil(s,el){civil=s;['cs','cm','ct','cp'].forEach(id=>{const b=document.getElementById(id);if(b)b.classList.remove('on');});el.classList.add('on');calcTax();}
 function calcTax(){
   const code=document.getElementById('cantonSel').value;const c=CD[code];if(!c)return;
   const gs=document.getElementById('gemSel');
@@ -1354,8 +1352,8 @@ function calcTax(){
   const inc=+document.getElementById('incSlider').value;
   const s3a=+document.getElementById('s3aSlider').value;
   const ded=+document.getElementById('dedSlider').value;
-  const m=civil==='married';
-  const tx=Math.max(0,inc-s3a-ded-(m?2600:0));
+  const m=(civil==='married'||civil==='partner');const sep=civil==='separated';
+  const tx=Math.max(0,inc-s3a-ded-(m?2600:sep?1200:0));
   const fed=Math.max(0,tx*0.0235*(m?.85:1));
   const cant=Math.max(0,tx*c.s*c.k/100);
   const comm=Math.max(0,tx*c.s*gStF/100);
