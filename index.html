@@ -1087,12 +1087,8 @@ canvas{max-width:100%}
           <div class="slider-wrap"><label>Bruttoeinkommen <span id="incVal">120'000 CHF</span></label><input type="range" min="20000" max="500000" step="5000" value="120000" id="incSlider" oninput="updS('inc');calcTax()"></div>
           <div class="slider-wrap"><label>Säule 3a Beitrag <span id="s3aVal">7'056 CHF</span></label><input type="range" min="0" max="7056" step="100" value="7056" id="s3aSlider" oninput="updS('s3a');calcTax()"></div>
           <div class="slider-wrap"><label>Abzüge / Berufskosten <span id="dedVal">8'000 CHF</span></label><input type="range" min="0" max="30000" step="500" value="8000" id="dedSlider" oninput="updS('ded');calcTax()"></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px">
-        <button class="toggle-btn on" id="cs" onclick="setCivil('single',this)">Ledig</button>
-        <button class="toggle-btn" id="cm" onclick="setCivil('married',this)">Verheiratet</button>
-        <button class="toggle-btn" id="ct" onclick="setCivil('separated',this)">Verheiratet, getrennt</button>
-        <button class="toggle-btn" id="cp" onclick="setCivil('partner',this)">Eingetragene Partnerschaft</button>
-      </div>
+          <div class="fgrp" style="margin-bottom:18px"><label>Zivilstand</label><select class="finput" id="civilSel" onchange="onCivilChange()"><option value="single">Ledig</option><option value="married">Verheiratet oder eingetragene Partnerschaft</option><option value="separated">Verheiratet/EP, aber getrennt lebend</option><option value="widowed">Verwitwet</option><option value="divorced">Geschieden</option></select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px"><div class="fgrp" style="margin-bottom:0"><label>Kinder vorhanden?</label><select class="finput" id="hasChildren" onchange="onChildrenChange()"><option value="no">Nein</option><option value="yes">Ja</option></select></div><div class="fgrp" style="margin-bottom:0" id="childCountWrap" style="display:none"><label>Anzahl Kinder</label><select class="finput" id="childCount" onchange="calcTax()"><option value="1">1 Kind</option><option value="2">2 Kinder</option><option value="3">3 Kinder</option><option value="4">4+ Kinder</option></select></div></div>
         </div>
         <div class="card">
           <div class="card-title mb16">Steueraufschlüsselung</div>
@@ -1103,7 +1099,7 @@ canvas{max-width:100%}
           </div>
           <div class="tax-row"><span class="tax-row-label">Bruttoeinkommen</span><span class="tax-row-val" id="tr-gross">120'000 CHF</span></div>
           <div class="tax-row"><span class="tax-row-label">− Säule 3a</span><span class="tax-row-val" style="color:var(--green)" id="tr-s3a">−7'056 CHF</span></div>
-          <div class="tax-row"><span class="tax-row-label">− Berufskosten</span><span class="tax-row-val" style="color:var(--green)" id="tr-ded">−8'000 CHF</span></div>
+          <div class="tax-row"><span class="tax-row-label">− Berufskosten</span><span class="tax-row-val" style="color:var(--green)" id="tr-ded">−8'000 CHF</span></div><div class="tax-row" id="tr-kids" style="display:none"><span class="tax-row-label" style="color:var(--green)">− Kinderabzug</span><span class="tax-row-val" style="color:var(--green)">−0 CHF</span></div>
           <div class="tax-row"><span class="tax-row-label" style="font-weight:600">Steuerbares EK</span><span class="tax-row-val" style="color:var(--blue)" id="tr-taxable">104'944 CHF</span></div>
           <div class="tax-row" style="background:var(--red-dim);border-radius:10px;padding:10px 12px;margin-top:6px"><span class="tax-row-label" style="font-weight:700;color:var(--red)">Gesamtsteuer</span><span class="tax-row-val" style="color:var(--red);font-size:16px" id="tr-total">10'580 CHF</span></div>
           <div class="tax-row"><span class="tax-row-label">Effektiver Steuersatz</span><span class="tax-row-val" id="tr-rate">8.8%</span></div>
@@ -1343,7 +1339,7 @@ function updS(t){
   if(t==='s3a'){const v=+document.getElementById('s3aSlider').value;document.getElementById('s3aVal').textContent=v.toLocaleString('de-CH')+' CHF';}
   if(t==='ded'){const v=+document.getElementById('dedSlider').value;document.getElementById('dedVal').textContent=v.toLocaleString('de-CH')+' CHF';}
 }
-function setCivil(s,el){civil=s;['cs','cm','ct','cp'].forEach(id=>{const b=document.getElementById(id);if(b)b.classList.remove('on');});el.classList.add('on');calcTax();}
+function onCivilChange(){civil=document.getElementById('civilSel').value;calcTax();}function onChildrenChange(){var hasK=document.getElementById('hasChildren').value==='yes';var wrap=document.getElementById('childCountWrap');if(wrap){wrap.style.display=hasK?'block':'none';}calcTax();}function setCivil(s,el){civil=s;['cs','cm','ct','cp'].forEach(function(id){var b=document.getElementById(id);if(b)b.classList.remove('on');});if(el)el.classList.add('on');calcTax();});el.classList.add('on');calcTax();}
 function calcTax(){
   const code=document.getElementById('cantonSel').value;const c=CD[code];if(!c)return;
   const gs=document.getElementById('gemSel');
@@ -1352,8 +1348,8 @@ function calcTax(){
   const inc=+document.getElementById('incSlider').value;
   const s3a=+document.getElementById('s3aSlider').value;
   const ded=+document.getElementById('dedSlider').value;
-  const m=(civil==='married'||civil==='partner');const sep=civil==='separated';
-  const tx=Math.max(0,inc-s3a-ded-(m?2600:sep?1200:0));
+  var cs=document.getElementById('civilSel');if(cs)civil=cs.value;var m=civil==='married';var sep=civil==='separated';var widDiv=civil==='widowed'||civil==='divorced';
+  var kids=0;var hk=document.getElementById('hasChildren');var ck=document.getElementById('childCount');if(hk&&hk.value==='yes')kids=parseInt(ck?ck.value:'1');var childDed=kids*6500;var civilDed=m?2600:sep?1200:0;const tx=Math.max(0,inc-s3a-ded-civilDed-childDed);
   const fed=Math.max(0,tx*0.0235*(m?.85:1));
   const cant=Math.max(0,tx*c.s*c.k/100);
   const comm=Math.max(0,tx*c.s*gStF/100);
@@ -1370,12 +1366,12 @@ function calcTax(){
   document.getElementById('taxTotal').textContent=fmt(tot)+' CHF';
   document.getElementById('tr-gross').textContent=fmt(inc)+' CHF';
   document.getElementById('tr-s3a').textContent='−'+fmt(s3a)+' CHF';
-  document.getElementById('tr-ded').textContent='−'+fmt(ded)+' CHF';
+  document.getElementById('tr-ded').textContent='−'+fmt(ded)+' CHF';var trKids=document.getElementById('tr-kids');if(trKids){if(kids>0){trKids.style.display='';trKids.querySelector('.tax-row-val').textContent='−'+fmt(childDed)+' CHF ('+kids+' Kind'+(kids>1?'er':'')+')';}else{trKids.style.display='none';}}
   document.getElementById('tr-taxable').textContent=fmt(tx)+' CHF';
   document.getElementById('tr-total').textContent=fmt(tot)+' CHF';
   document.getElementById('tr-rate').textContent=rate.toFixed(1)+'%';
   document.getElementById('s3aSaving').textContent=fmt(sav)+' CHF';
-  document.getElementById('taxSubtitle').textContent='Kanton '+c.n+' · Gemeinde '+gemName+' · Steuerjahr 2025';
+  var civilLabel={single:'Ledig',married:'Verheiratet/EP',separated:'Getrennt lebend',widowed:'Verwitwet',divorced:'Geschieden'}[civil]||'Ledig';document.getElementById('taxSubtitle').textContent='Kanton '+c.n+' · Gemeinde '+gemName+' · Steuerjahr 2025';
   const cheapestG=[...c.g].sort((a,b)=>a[1]-b[1]).slice(0,3).map(x=>x[0]+' ('+x[1]+'%)').join(', ');
   document.getElementById('taxTip').innerHTML=`Maximiere Säule 3a (7'056 CHF) → spare ca. <b style="color:var(--gold)">${fmt(sav)} CHF</b> Steuern. Günstigste Gemeinden in ${c.n}: ${cheapestG}. Kanton Zug (80%) und Schwyz (160%) als steuergünstige Alternativen.`;
 }
